@@ -1,8 +1,10 @@
 import {
     registerUser,
+    registerAdmin,
     verifyEmail as verifyEmailService,
     resendVerificationOTP as resendVerificationOTPService,
     loginUser,
+    loginAdmin,
     refreshAccessToken,
     logoutUser,
     forgotPassword,
@@ -11,12 +13,15 @@ import {
 } from "../../services/auth/auth.service.js";
 
 
+// ========================================
+// USER REGISTER
+// ========================================
+
 const register = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         const user =
@@ -24,9 +29,7 @@ const register = async(
 
         return res.status(201).json({
             success: true,
-
             message: "Registration successful. Please verify your email.",
-
             data: user
         });
 
@@ -36,18 +39,45 @@ const register = async(
 };
 
 
+// ========================================
+// ADMIN REGISTER
+// ========================================
+
+const adminRegister = async(
+    req,
+    res,
+    next
+) => {
+    try {
+
+        const admin =
+            await registerAdmin(req.body);
+
+        return res.status(201).json({
+            success: true,
+            message: "Admin registration successful. Please verify your email.",
+            data: admin
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+// ========================================
+// VERIFY EMAIL
+// ========================================
+
 const verifyEmail = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         const user =
-            await verifyEmailService(
-                req.body
-            );
+            await verifyEmailService(req.body);
 
         return res.status(200).json({
             success: true,
@@ -61,12 +91,15 @@ const verifyEmail = async(
 };
 
 
+// ========================================
+// USER LOGIN
+// ========================================
+
 const login = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         const result =
@@ -83,7 +116,6 @@ const login = async(
 
                 data: {
                     requiresEmailVerification: true,
-
                     email: result.email
                 }
             });
@@ -123,12 +155,80 @@ const login = async(
 };
 
 
+// ========================================
+// ADMIN LOGIN
+// ========================================
+
+const adminLogin = async(
+    req,
+    res,
+    next
+) => {
+    try {
+
+        const result =
+            await loginAdmin(req.body);
+
+        if (
+            result.requiresEmailVerification
+        ) {
+
+            return res.status(200).json({
+                success: true,
+
+                message: "Your email is not verified. A new verification OTP has been sent to your email.",
+
+                data: {
+                    requiresEmailVerification: true,
+
+                    email: result.email
+                }
+            });
+        }
+
+        res.cookie(
+            "refreshToken",
+            result.refreshToken, {
+                httpOnly: true,
+
+                secure: process.env.NODE_ENV ===
+                    "production",
+
+                sameSite: "strict",
+
+                maxAge: 7 *
+                    24 *
+                    60 *
+                    60 *
+                    1000
+            }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Admin login successful",
+
+            data: {
+                user: result.user,
+                accessToken: result.accessToken
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+// ========================================
+// REFRESH TOKEN
+// ========================================
+
 const refreshToken = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         const token =
@@ -151,12 +251,15 @@ const refreshToken = async(
 };
 
 
+// ========================================
+// RESEND VERIFICATION OTP
+// ========================================
+
 const resendVerificationOTP = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         const result =
@@ -178,12 +281,15 @@ const resendVerificationOTP = async(
 };
 
 
+// ========================================
+// LOGOUT
+// ========================================
+
 const logout = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         const refreshToken =
@@ -215,12 +321,15 @@ const logout = async(
 };
 
 
+// ========================================
+// FORGOT PASSWORD
+// ========================================
+
 const forgotPasswordController = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         await forgotPassword(
@@ -239,12 +348,15 @@ const forgotPasswordController = async(
 };
 
 
+// ========================================
+// RESET PASSWORD
+// ========================================
+
 const resetPasswordController = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         const result =
@@ -266,12 +378,15 @@ const resetPasswordController = async(
 };
 
 
+// ========================================
+// CHANGE PASSWORD
+// ========================================
+
 const changePasswordController = async(
     req,
     res,
     next
 ) => {
-
     try {
 
         await changePassword({
@@ -296,9 +411,11 @@ const changePasswordController = async(
 
 export {
     register,
+    adminRegister,
     verifyEmail,
     resendVerificationOTP,
     login,
+    adminLogin,
     refreshToken,
     logout,
     forgotPasswordController,

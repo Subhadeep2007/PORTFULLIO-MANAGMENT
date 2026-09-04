@@ -1,408 +1,889 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 import User from "../../models/user.js";
 
-import generateOTP from "../../utils/generateOTP.js";
-import sendEmail from "../../utils/sendEmail.js";
 
-import {
-    generateAccessToken,
-    generateRefreshToken
-} from "../../utils/generateToken.js";
+// ========================================
+// HELPER FUNCTIONS
+// ========================================
 
 
-// ===============================
-// REGISTER USER
-// ===============================
+// Generate OTP
+const generateOTP = () => {
 
-const registerUser = async({
-    name,
-    email,
-    password
-}) => {
+    return crypto
+        .randomInt(100000, 1000000)
+        .toString();
 
+};
+
+
+// Generate Access Token
+const generateAccessToken = (user) => {
+
+    return jwt.sign({
+            userId: user._id.toString(),
+            role: user.role
+        },
+        process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRE || "1d"
+        }
+    );
+
+};
+
+
+// Generate Refresh Token
+const generateRefreshToken = (user) => {
+
+    return jwt.sign({
+            userId: user._id.toString(),
+            role: user.role
+        },
+        process.env.JWT_SECRET, {
+            expiresIn: "7d"
+        }
+    );
+
+};
+
+
+// ========================================
+// USER REGISTER
+// ========================================
+
+const registerUser = async(data) => {
+
+    const {
+        name,
+        email,
+        password
+    } = data;
+
+
+    const normalizedEmail =
+        email.toLowerCase().trim();
+
+
+    // Check existing user
     const existingUser =
-        await User.findOne({ email });
+        await User.findOne({
+            email: normalizedEmail
+        });
+
 
     if (existingUser) {
+
         throw new Error(
-            "User with this email already exists"
+            "An account with this email already exists"
         );
+
     }
 
+
+    // Hash password
     const hashedPassword =
         await bcrypt.hash(password, 12);
 
-    const otp = generateOTP();
+
+    // Generate OTP
+    const otp =
+        generateOTP();
+
 
     const otpExpire =
         new Date(
             Date.now() + 10 * 60 * 1000
         );
 
-    const user = await User.create({
-        name,
-        email,
-        password: hashedPassword,
 
-        // IMPORTANT:
-        // Public registration always creates USER
-        role: "user",
+    // Create user
+    const user =
+        await User.create({
 
-        emailVerificationOTP: otp,
-        emailVerificationOTPExpire: otpExpire
-    });
+            name,
 
-    await sendEmail({
-        to: email,
+            email: normalizedEmail,
 
-        subject: "Verify your Portfolio Builder account",
+            password: hashedPassword,
 
-        html: `
-            <h2>Welcome to Portfolio Builder</h2>
+            role: "user",
 
-            <p>Hello ${name},</p>
+            isEmailVerified: false,
 
-            <p>
-                Your email verification OTP is:
-            </p>
+            emailVerificationOTP: otp,
 
-            <h1>${otp}</h1>
+            emailVerificationOTPExpire: otpExpire
 
-            <p>
-                This OTP will expire in 10 minutes.
-            </p>
+        });
 
-            <p>
-                If you did not create this account,
-                you can ignore this email.
-            </p>
-        `
-    });
+
+    /*
+        IMPORTANT:
+
+        Yahan tumhara existing
+        email service call karna hoga.
+
+        Example:
+
+        await sendVerificationEmail(
+            normalizedEmail,
+            otp
+        );
+    */
+
 
     return {
-        id: user._id,
+
+        userId: user._id,
+
         name: user.name,
+
         email: user.email,
+
         role: user.role,
+
         isEmailVerified: user.isEmailVerified
+
     };
+
 };
 
 
-// ===============================
-// VERIFY EMAIL
-// ===============================
+// ========================================
+// ADMIN REGISTER
+// ========================================
 
-const verifyEmail = async({
-    email,
-    otp
-}) => {
+const registerAdmin = async(data) => {
 
-    const user =
-        await User.findOne({ email });
+    const {
+        name,
+        email,
+        password,
+        adminSecretKey
+    } = data;
 
-    if (!user) {
-        throw new Error("User not found");
+
+    // ========================================
+    // CHECK ADMIN SECRET
+    // ========================================
+
+    if (!adminSecretKey ||
+        adminSecretKey !==
+        process.env.JWT_SECRET
+    ) {
+
+        throw new Error(
+            "Invalid admin secret key"
+        );
+
     }
 
+
+    const normalizedEmail =
+        email.toLowerCase().trim();
+
+
+    // ========================================
+    // CHECK EXISTING EMAIL
+    // ========================================
+
+    const existingUser =
+        await User.findOne({
+            email: normalizedEmail
+        });
+
+
+    if (existingUser) {
+
+        throw new Error(
+            "An account with this email already exists"
+        );
+
+    }
+
+
+    // ========================================
+    // CHECK EXISTING ADMIN
+    // ========================================
+
+    const existingAdmin =
+        await User.findOne({
+            role: "admin"
+        });
+
+
+    if (existingAdmin) {
+
+        throw new Error(
+            "An admin account already exists"
+        );
+
+    }
+
+
+    // ========================================
+    // HASH PASSWORD
+    // ========================================
+
+    const hashedPassword =
+        await bcrypt.hash(password, 12);
+
+
+    // ========================================
+    // GENERATE OTP
+    // ========================================
+
+    const otp =
+        generateOTP();
+
+
+    const otpExpire =
+        new Date(
+            Date.now() + 10 * 60 * 1000
+        );
+
+
+    // ========================================
+    // CREATE ADMIN
+    // ========================================
+
+    const admin =
+        await User.create({
+
+            name,
+
+            email: normalizedEmail,
+
+            password: hashedPassword,
+
+            role: "admin",
+
+            isEmailVerified: false,
+
+            emailVerificationOTP: otp,
+
+            emailVerificationOTPExpire: otpExpire
+
+        });
+
+
+    /*
+        Existing email service:
+
+        await sendVerificationEmail(
+            normalizedEmail,
+            otp
+        );
+    */
+
+
+    return {
+
+        userId: admin._id,
+
+        name: admin.name,
+
+        email: admin.email,
+
+        role: admin.role,
+
+        isEmailVerified: admin.isEmailVerified
+
+    };
+
+};
+
+
+// ========================================
+// VERIFY EMAIL
+// ========================================
+
+const verifyEmail = async(data) => {
+
+    const {
+        email,
+        otp
+    } = data;
+
+
+    const normalizedEmail =
+        email.toLowerCase().trim();
+
+
+    const user =
+        await User.findOne({
+            email: normalizedEmail
+        });
+
+
+    if (!user) {
+
+        throw new Error(
+            "User not found"
+        );
+
+    }
+
+
     if (user.isEmailVerified) {
+
         throw new Error(
             "Email is already verified"
         );
+
     }
 
-    if (!user.emailVerificationOTP) {
+
+    if (!user.emailVerificationOTP ||
+        !user.emailVerificationOTPExpire
+    ) {
+
         throw new Error(
             "Verification OTP not found"
         );
+
     }
+
 
     if (
         user.emailVerificationOTPExpire <
         new Date()
     ) {
+
         throw new Error(
             "Verification OTP has expired"
         );
+
     }
 
+
     if (
-        user.emailVerificationOTP !== otp
+        user.emailVerificationOTP !==
+        otp
     ) {
+
         throw new Error(
             "Invalid verification OTP"
         );
+
     }
+
 
     user.isEmailVerified = true;
 
     user.emailVerificationOTP = null;
+
     user.emailVerificationOTPExpire = null;
+
 
     await user.save();
 
+
     return {
-        id: user._id,
+
+        userId: user._id,
+
         name: user.name,
+
         email: user.email,
+
         role: user.role,
+
         isEmailVerified: user.isEmailVerified
+
     };
+
 };
 
 
-// ===============================
+// ========================================
 // RESEND VERIFICATION OTP
-// ===============================
+// ========================================
 
 const resendVerificationOTP = async(
     email
 ) => {
 
+    const normalizedEmail =
+        email.toLowerCase().trim();
+
+
     const user =
-        await User.findOne({ email });
+        await User.findOne({
+            email: normalizedEmail
+        });
+
 
     if (!user) {
-        throw new Error("User not found");
+
+        throw new Error(
+            "User not found"
+        );
+
     }
 
+
     if (user.isEmailVerified) {
+
         throw new Error(
             "Email is already verified"
         );
+
     }
 
-    const otp = generateOTP();
+
+    const otp =
+        generateOTP();
+
 
     const otpExpire =
         new Date(
             Date.now() + 10 * 60 * 1000
         );
 
-    user.emailVerificationOTP = otp;
+
+    user.emailVerificationOTP =
+        otp;
+
     user.emailVerificationOTPExpire =
         otpExpire;
 
+
     await user.save();
 
-    await sendEmail({
-        to: email,
 
-        subject: "Your new Portfolio Builder verification OTP",
+    /*
+        Existing email service:
 
-        html: `
-            <h2>Portfolio Builder</h2>
+        await sendVerificationEmail(
+            normalizedEmail,
+            otp
+        );
+    */
 
-            <p>Hello ${user.name},</p>
-
-            <p>
-                Your new verification OTP is:
-            </p>
-
-            <h1>${otp}</h1>
-
-            <p>
-                This OTP will expire in 10 minutes.
-            </p>
-        `
-    });
 
     return {
-        email: user.email
+
+        email: user.email,
+
+        message: "Verification OTP sent successfully"
+
     };
+
 };
 
 
-// ===============================
-// LOGIN
-// ===============================
+// ========================================
+// USER LOGIN
+// ========================================
 
-const loginUser = async({
-    email,
-    password
-}) => {
+const loginUser = async(data) => {
+
+    const {
+        email,
+        password
+    } = data;
+
+
+    const normalizedEmail =
+        email.toLowerCase().trim();
+
 
     const user =
-        await User.findOne({ email });
+        await User.findOne({
+            email: normalizedEmail
+        });
+
 
     if (!user) {
+
         throw new Error(
             "Invalid email or password"
         );
+
     }
+
+
+    // User cannot login as admin
+    if (user.role !== "user") {
+
+        throw new Error(
+            "Please use admin login"
+        );
+
+    }
+
 
     if (!user.isActive) {
+
         throw new Error(
-            "Your account is inactive"
+            "Your account has been deactivated"
         );
+
     }
 
-    const isPasswordCorrect =
+
+    const passwordMatch =
         await bcrypt.compare(
             password,
             user.password
         );
 
-    if (!isPasswordCorrect) {
+
+    if (!passwordMatch) {
+
         throw new Error(
             "Invalid email or password"
         );
+
     }
+
 
     // Email verification
     if (!user.isEmailVerified) {
 
-        const otp = generateOTP();
+        const otp =
+            generateOTP();
 
-        const otpExpire =
+
+        user.emailVerificationOTP =
+            otp;
+
+        user.emailVerificationOTPExpire =
             new Date(
                 Date.now() + 10 * 60 * 1000
             );
 
-        user.emailVerificationOTP = otp;
-
-        user.emailVerificationOTPExpire =
-            otpExpire;
 
         await user.save();
 
-        await sendEmail({
-            to: user.email,
 
-            subject: "Verify your Portfolio Builder account",
+        /*
+            Existing email service:
 
-            html: `
-                <h2>Portfolio Builder</h2>
+            await sendVerificationEmail(
+                user.email,
+                otp
+            );
+        */
 
-                <p>Hello ${user.name},</p>
-
-                <p>
-                    Your verification OTP is:
-                </p>
-
-                <h1>${otp}</h1>
-
-                <p>
-                    This OTP will expire in
-                    10 minutes.
-                </p>
-            `
-        });
 
         return {
+
             requiresEmailVerification: true,
+
             email: user.email
+
         };
+
     }
 
-    // Generate tokens
+
     const accessToken =
-        generateAccessToken(
-            user._id.toString(),
-            user.role
-        );
+        generateAccessToken(user);
+
 
     const refreshToken =
-        generateRefreshToken(
-            user._id.toString(),
-            user.role
-        );
+        generateRefreshToken(user);
 
-    user.refreshToken = refreshToken;
 
-    user.lastSeen = new Date();
+    user.refreshToken =
+        refreshToken;
+
+    user.lastSeen =
+        new Date();
+
 
     await user.save();
 
+
     return {
-        requiresEmailVerification: false,
 
         user: {
-            id: user._id,
+
+            userId: user._id,
+
             name: user.name,
+
             email: user.email,
+
             role: user.role,
+
+            profileImage: user.profileImage,
+
             isEmailVerified: user.isEmailVerified
+
         },
 
         accessToken,
+
         refreshToken
+
     };
+
 };
 
 
-// ===============================
-// REFRESH ACCESS TOKEN
-// ===============================
+// ========================================
+// ADMIN LOGIN
+// ========================================
 
-const refreshAccessToken = async(
-    refreshToken
-) => {
+const loginAdmin = async(data) => {
 
-    if (!refreshToken) {
+    const {
+        email,
+        password,
+        adminSecretKey
+    } = data;
+
+
+    // ========================================
+    // SECRET KEY CHECK
+    // ========================================
+
+    if (!adminSecretKey ||
+        adminSecretKey !==
+        process.env.JWT_SECRET
+    ) {
+
         throw new Error(
-            "Refresh token not found"
+            "Invalid admin secret key"
         );
+
     }
 
-    const user =
+
+    const normalizedEmail =
+        email.toLowerCase().trim();
+
+
+    const admin =
         await User.findOne({
-            refreshToken
+            email: normalizedEmail
         });
 
+
+    if (!admin) {
+
+        throw new Error(
+            "Invalid admin credentials"
+        );
+
+    }
+
+
+    // ========================================
+    // ROLE CHECK
+    // ========================================
+
+    if (admin.role !== "admin") {
+
+        throw new Error(
+            "This account is not an admin account"
+        );
+
+    }
+
+
+    if (!admin.isActive) {
+
+        throw new Error(
+            "Admin account is deactivated"
+        );
+
+    }
+
+
+    // ========================================
+    // PASSWORD CHECK
+    // ========================================
+
+    const passwordMatch =
+        await bcrypt.compare(
+            password,
+            admin.password
+        );
+
+
+    if (!passwordMatch) {
+
+        throw new Error(
+            "Invalid admin credentials"
+        );
+
+    }
+
+
+    // ========================================
+    // EMAIL VERIFICATION
+    // ========================================
+
+    if (!admin.isEmailVerified) {
+
+        const otp =
+            generateOTP();
+
+
+        admin.emailVerificationOTP =
+            otp;
+
+        admin.emailVerificationOTPExpire =
+            new Date(
+                Date.now() + 10 * 60 * 1000
+            );
+
+
+        await admin.save();
+
+
+        /*
+            Existing email service:
+
+            await sendVerificationEmail(
+                admin.email,
+                otp
+            );
+        */
+
+
+        return {
+
+            requiresEmailVerification: true,
+
+            email: admin.email
+
+        };
+
+    }
+
+
+    // ========================================
+    // TOKENS
+    // ========================================
+
+    const accessToken =
+        generateAccessToken(admin);
+
+
+    const refreshToken =
+        generateRefreshToken(admin);
+
+
+    admin.refreshToken =
+        refreshToken;
+
+    admin.lastSeen =
+        new Date();
+
+
+    await admin.save();
+
+
+    return {
+
+        user: {
+
+            userId: admin._id,
+
+            name: admin.name,
+
+            email: admin.email,
+
+            role: admin.role,
+
+            profileImage: admin.profileImage,
+
+            isEmailVerified: admin.isEmailVerified
+
+        },
+
+        accessToken,
+
+        refreshToken
+
+    };
+
+};
+
+
+// ========================================
+// REFRESH ACCESS TOKEN
+// ========================================
+
+const refreshAccessToken = async(
+    token
+) => {
+
+    if (!token) {
+
+        throw new Error(
+            "Refresh token is required"
+        );
+
+    }
+
+
+    const decoded =
+        jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
+
+
+    const user =
+        await User.findById(
+            decoded.userId
+        );
+
+
     if (!user) {
+
+        throw new Error(
+            "User not found"
+        );
+
+    }
+
+
+    if (!user.isActive) {
+
+        throw new Error(
+            "Account is deactivated"
+        );
+
+    }
+
+
+    if (
+        user.refreshToken !== token
+    ) {
+
         throw new Error(
             "Invalid refresh token"
         );
+
     }
 
-    if (!user.isActive) {
-        throw new Error(
-            "Your account is inactive"
-        );
-    }
 
-    try {
+    const accessToken =
+        generateAccessToken(user);
 
-        const decoded =
-            jwt.verify(
-                refreshToken,
-                process.env.JWT_SECRET
-            );
 
-        if (
-            decoded.userId !==
-            user._id.toString()
-        ) {
-            throw new Error(
-                "Invalid refresh token"
-            );
-        }
+    return {
 
-        const accessToken =
-            generateAccessToken(
-                user._id.toString(),
-                user.role
-            );
+        accessToken
 
-        return {
-            accessToken
-        };
+    };
 
-    } catch (error) {
-
-        throw new Error(
-            "Invalid or expired refresh token"
-        );
-    }
 };
 
 
-// ===============================
+// ========================================
 // LOGOUT
-// ===============================
+// ========================================
 
 const logoutUser = async(
     refreshToken
@@ -412,139 +893,188 @@ const logoutUser = async(
         return;
     }
 
-    await User.findOneAndUpdate({ refreshToken }, {
-        $set: {
-            refreshToken: null
-        }
-    });
+
+    try {
+
+        const decoded =
+            jwt.verify(
+                refreshToken,
+                process.env.JWT_SECRET
+            );
+
+
+        await User.findByIdAndUpdate(
+            decoded.userId, {
+                refreshToken: null
+            }
+        );
+
+    } catch (error) {
+
+        // Token already invalid/expired.
+        // Logout should still succeed.
+
+    }
+
 };
 
 
-// ===============================
+// ========================================
 // FORGOT PASSWORD
-// ===============================
+// ========================================
 
 const forgotPassword = async(
     email
 ) => {
 
+    const normalizedEmail =
+        email.toLowerCase().trim();
+
+
     const user =
-        await User.findOne({ email });
+        await User.findOne({
+            email: normalizedEmail
+        });
+
+
+    /*
+        Security:
+        Don't reveal whether email exists.
+    */
 
     if (!user) {
         return;
     }
 
-    if (!user.isActive) {
-        return;
-    }
 
-    const otp = generateOTP();
+    const otp =
+        generateOTP();
 
-    const otpExpire =
+
+    user.resetPasswordOTP =
+        otp;
+
+    user.resetPasswordOTPExpire =
         new Date(
             Date.now() + 10 * 60 * 1000
         );
 
-    user.resetPasswordOTP = otp;
-
-    user.resetPasswordOTPExpire =
-        otpExpire;
 
     await user.save();
 
-    await sendEmail({
-        to: email,
 
-        subject: "Portfolio Builder password reset OTP",
+    /*
+        Existing email service:
 
-        html: `
-            <h2>Portfolio Builder</h2>
+        await sendPasswordResetEmail(
+            user.email,
+            otp
+        );
+    */
 
-            <p>Hello ${user.name},</p>
-
-            <p>
-                Your password reset OTP is:
-            </p>
-
-            <h1>${otp}</h1>
-
-            <p>
-                This OTP will expire in
-                10 minutes.
-            </p>
-        `
-    });
 };
 
 
-// ===============================
+// ========================================
 // RESET PASSWORD
-// ===============================
+// ========================================
 
-const resetPassword = async({
-    email,
-    otp,
-    newPassword
-}) => {
+const resetPassword = async(
+    data
+) => {
+
+    const {
+        email,
+        otp,
+        newPassword
+    } = data;
+
+
+    const normalizedEmail =
+        email.toLowerCase().trim();
+
 
     const user =
-        await User.findOne({ email });
+        await User.findOne({
+            email: normalizedEmail
+        });
+
 
     if (!user) {
+
         throw new Error(
             "Invalid reset request"
         );
+
     }
 
-    if (!user.resetPasswordOTP) {
+
+    if (!user.resetPasswordOTP ||
+        !user.resetPasswordOTPExpire
+    ) {
+
         throw new Error(
-            "Reset OTP not found"
+            "Password reset OTP not found"
         );
+
     }
 
-    if (!user.resetPasswordOTPExpire ||
+
+    if (
         user.resetPasswordOTPExpire <
         new Date()
     ) {
+
         throw new Error(
-            "Reset OTP has expired"
+            "Password reset OTP has expired"
         );
+
     }
+
 
     if (
         user.resetPasswordOTP !== otp
     ) {
+
         throw new Error(
-            "Invalid reset OTP"
+            "Invalid password reset OTP"
         );
+
     }
 
-    const hashedPassword =
+
+    user.password =
         await bcrypt.hash(
             newPassword,
             12
         );
 
-    user.password = hashedPassword;
 
-    user.resetPasswordOTP = null;
-    user.resetPasswordOTPExpire = null;
+    user.resetPasswordOTP =
+        null;
 
-    // Logout all existing sessions
-    user.refreshToken = null;
+    user.resetPasswordOTPExpire =
+        null;
+
+    user.refreshToken =
+        null;
+
 
     await user.save();
 
+
     return {
-        email: user.email
+
+        message: "Password reset successfully"
+
     };
+
 };
 
 
-// ===============================
+// ========================================
 // CHANGE PASSWORD
-// ===============================
+// ========================================
 
 const changePassword = async({
     userId,
@@ -553,57 +1083,67 @@ const changePassword = async({
 }) => {
 
     const user =
-        await User.findById(userId);
+        await User.findById(
+            userId
+        );
+
 
     if (!user) {
+
         throw new Error(
             "User not found"
         );
+
     }
 
-    const isPasswordCorrect =
+
+    const passwordMatch =
         await bcrypt.compare(
             currentPassword,
             user.password
         );
 
-    if (!isPasswordCorrect) {
+
+    if (!passwordMatch) {
+
         throw new Error(
             "Current password is incorrect"
         );
+
     }
 
-    const isSamePassword =
-        await bcrypt.compare(
-            newPassword,
-            user.password
-        );
 
-    if (isSamePassword) {
-        throw new Error(
-            "New password must be different from current password"
-        );
-    }
-
-    const hashedPassword =
+    user.password =
         await bcrypt.hash(
             newPassword,
             12
         );
 
-    user.password = hashedPassword;
 
-    user.refreshToken = null;
+    // Invalidate existing refresh token
+    user.refreshToken =
+        null;
+
 
     await user.save();
+
+
+    return true;
+
 };
 
 
+// ========================================
+// EXPORTS
+// ========================================
+
 export {
     registerUser,
+    registerAdmin,
     verifyEmail,
     resendVerificationOTP,
     loginUser,
+    loginAdmin,
     refreshAccessToken,
     logoutUser,
     forgotPassword,

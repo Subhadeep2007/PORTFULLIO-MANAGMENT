@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const connectDatabase = async() => {
+const connectDB = async() => {
     try {
         await mongoose.connect(process.env.ATLASDB_URL);
 
@@ -11,4 +11,4 @@ const connectDatabase = async() => {
     }
 };
 
-export default connectDatabase;
+export default connectDB;

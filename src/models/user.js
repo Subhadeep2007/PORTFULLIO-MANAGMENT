@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
+
+    // ========================================
+    // BASIC USER INFORMATION
+    // ========================================
+
     name: {
         type: String,
         required: true,
@@ -23,10 +28,20 @@ const userSchema = new mongoose.Schema({
         minlength: 8
     },
 
+
+    // ========================================
+    // PROFILE
+    // ========================================
+
     profileImage: {
         type: String,
         default: ""
     },
+
+
+    // ========================================
+    // EMAIL VERIFICATION
+    // ========================================
 
     isEmailVerified: {
         type: Boolean,
@@ -43,6 +58,11 @@ const userSchema = new mongoose.Schema({
         default: null
     },
 
+
+    // ========================================
+    // PASSWORD RESET
+    // ========================================
+
     resetPasswordOTP: {
         type: String,
         default: null
@@ -53,16 +73,31 @@ const userSchema = new mongoose.Schema({
         default: null
     },
 
+
+    // ========================================
+    // REFRESH TOKEN
+    // ========================================
+
     refreshToken: {
         type: String,
         default: null
     },
+
+
+    // ========================================
+    // ROLE
+    // ========================================
 
     role: {
         type: String,
         enum: ["user", "admin"],
         default: "user"
     },
+
+
+    // ========================================
+    // ACCOUNT STATUS
+    // ========================================
 
     isActive: {
         type: Boolean,
@@ -73,12 +108,15 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: null
     }
+
 }, {
     timestamps: true
 });
 
+
 const User =
     mongoose.models.User ||
     mongoose.model("User", userSchema);
+
 
 export default User;

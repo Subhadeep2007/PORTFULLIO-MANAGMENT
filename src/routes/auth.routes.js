@@ -12,8 +12,6 @@ import {
     changePasswordController
 } from "../controllers/auth/auth.controller.js";
 
-import validate from "../middleware/validate.middleware.js";
-
 import {
     registerSchema,
     verifyEmailSchema,
@@ -24,16 +22,19 @@ import {
     changePasswordSchema
 } from "../validators/auth.validator.js";
 
+import validate from "../middleware/validate.middleware.js";
+
 import authMiddleware from "../middleware/auth.middleware.js";
 
 import authRateLimiter from "../middleware/rateLimit.middleware.js";
 
+
 const router = express.Router();
 
 
-// ===============================
+// ========================================
 // REGISTER
-// ===============================
+// ========================================
 
 router.post(
     "/register",
@@ -42,9 +43,9 @@ router.post(
 );
 
 
-// ===============================
+// ========================================
 // VERIFY EMAIL
-// ===============================
+// ========================================
 
 router.post(
     "/verify-email",
@@ -54,9 +55,9 @@ router.post(
 );
 
 
-// ===============================
+// ========================================
 // RESEND VERIFICATION
-// ===============================
+// ========================================
 
 router.post(
     "/resend-verification",
@@ -66,9 +67,9 @@ router.post(
 );
 
 
-// ===============================
+// ========================================
 // LOGIN
-// ===============================
+// ========================================
 
 router.post(
     "/login",
@@ -78,9 +79,9 @@ router.post(
 );
 
 
-// ===============================
+// ========================================
 // REFRESH TOKEN
-// ===============================
+// ========================================
 
 router.post(
     "/refresh-token",
@@ -88,9 +89,9 @@ router.post(
 );
 
 
-// ===============================
+// ========================================
 // LOGOUT
-// ===============================
+// ========================================
 
 router.post(
     "/logout",
@@ -98,9 +99,9 @@ router.post(
 );
 
 
-// ===============================
+// ========================================
 // FORGOT PASSWORD
-// ===============================
+// ========================================
 
 router.post(
     "/forgot-password",
@@ -110,9 +111,9 @@ router.post(
 );
 
 
-// ===============================
+// ========================================
 // RESET PASSWORD
-// ===============================
+// ========================================
 
 router.post(
     "/reset-password",
@@ -122,9 +123,9 @@ router.post(
 );
 
 
-// ===============================
+// ========================================
 // CHANGE PASSWORD
-// ===============================
+// ========================================
 
 router.post(
     "/change-password",
