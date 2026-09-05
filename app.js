@@ -6,6 +6,7 @@ import helmet from "helmet";
 import authRoutes from "./src/routes/auth.routes.js";
 import portfolioRoutes from "./src/routes/portfolio.routes.js";
 import projectRoutes from "./src/routes/project.routes.js";
+import experienceRoutes from "./src/routes/experience.routes.js";
 const app = express();
 
 
@@ -86,6 +87,10 @@ app.use(
 app.use(
     "/api/projects",
     projectRoutes
+);
+app.use(
+    "/api/experiences",
+    experienceRoutes
 );
 // ===============================
 // 404
