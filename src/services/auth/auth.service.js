@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 
-import User from "../../models/user.js";
+import User from "../../models/user.model.js";
 
 
 // ========================================
