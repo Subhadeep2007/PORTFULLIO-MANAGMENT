@@ -7,6 +7,10 @@ import authRoutes from "./src/routes/auth.routes.js";
 import portfolioRoutes from "./src/routes/portfolio.routes.js";
 import projectRoutes from "./src/routes/project.routes.js";
 import experienceRoutes from "./src/routes/experience.routes.js";
+import educationRoutes from "./src/routes/education.routes.js";
+import certificateRoutes from "./src/routes/certificate.routes.js";
+import skillRoutes from "./src/routes/skill.routes.js";
+import postRoutes from "./src/routes/post.routes.js";
 const app = express();
 
 
@@ -91,6 +95,28 @@ app.use(
 app.use(
     "/api/experiences",
     experienceRoutes
+);
+app.use(
+    "/api/education",
+    educationRoutes
+);
+
+app.use(
+    "/api/certificates",
+    certificateRoutes
+);
+
+app.use(
+    "/api/certificates",
+    certificateRoutes
+);
+app.use(
+    "/api/skills",
+    skillRoutes
+);
+app.use(
+    "/api/posts",
+    postRoutes
 );
 // ===============================
 // 404

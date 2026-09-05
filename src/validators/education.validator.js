@@ -2,41 +2,47 @@ import { body } from "express-validator";
 
 
 // ========================================
-// CREATE EXPERIENCE
+// CREATE EDUCATION
 // ========================================
 
-const createExperienceSchema = [
+const createEducationSchema = [
 
-    body("jobTitle")
-    .optional()
+    body("institution")
     .trim()
+    .notEmpty()
+    .withMessage(
+        "Institution is required"
+    )
     .isLength({
-        max: 100
+        max: 200
     })
     .withMessage(
-        "Job title cannot exceed 100 characters"
+        "Institution cannot exceed 200 characters"
     ),
 
 
-    body("company")
+    body("degree")
+    .trim()
+    .notEmpty()
+    .withMessage(
+        "Degree is required"
+    )
+    .isLength({
+        max: 150
+    })
+    .withMessage(
+        "Degree cannot exceed 150 characters"
+    ),
+
+
+    body("fieldOfStudy")
     .optional()
     .trim()
     .isLength({
         max: 150
     })
     .withMessage(
-        "Company cannot exceed 150 characters"
-    ),
-
-
-    body("companyUrl")
-    .optional({
-        values: "falsy"
-    })
-    .trim()
-    .isURL()
-    .withMessage(
-        "Company URL must be a valid URL"
+        "Field of study cannot exceed 150 characters"
     ),
 
 
@@ -51,22 +57,11 @@ const createExperienceSchema = [
     ),
 
 
-    body("employmentType")
-    .optional()
-    .isIn([
-        "full-time",
-        "part-time",
-        "internship",
-        "freelance",
-        "contract"
-    ])
-    .withMessage(
-        "Invalid employment type"
-    ),
-
-
     body("startDate")
-    .optional()
+    .notEmpty()
+    .withMessage(
+        "Start date is required"
+    )
     .isISO8601()
     .withMessage(
         "Start date must be a valid date"
@@ -83,11 +78,22 @@ const createExperienceSchema = [
     ),
 
 
-    body("currentlyWorking")
+    body("currentlyStudying")
     .optional()
     .isBoolean()
     .withMessage(
-        "currentlyWorking must be true or false"
+        "currentlyStudying must be true or false"
+    ),
+
+
+    body("grade")
+    .optional()
+    .trim()
+    .isLength({
+        max: 50
+    })
+    .withMessage(
+        "Grade cannot exceed 50 characters"
     ),
 
 
@@ -95,18 +101,10 @@ const createExperienceSchema = [
     .optional()
     .trim()
     .isLength({
-        max: 3000
+        max: 2000
     })
     .withMessage(
-        "Description cannot exceed 3000 characters"
-    ),
-
-
-    body("technologies")
-    .optional()
-    .isArray()
-    .withMessage(
-        "Technologies must be an array"
+        "Description cannot exceed 2000 characters"
     ),
 
 
@@ -139,41 +137,49 @@ const createExperienceSchema = [
 
 
 // ========================================
-// UPDATE EXPERIENCE
+// UPDATE EDUCATION
 // ========================================
 
-const updateExperienceSchema = [
+const updateEducationSchema = [
 
-    body("jobTitle")
+    body("institution")
     .optional()
     .trim()
+    .notEmpty()
+    .withMessage(
+        "Institution cannot be empty"
+    )
     .isLength({
-        max: 100
+        max: 200
     })
     .withMessage(
-        "Job title cannot exceed 100 characters"
+        "Institution cannot exceed 200 characters"
     ),
 
 
-    body("company")
+    body("degree")
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage(
+        "Degree cannot be empty"
+    )
+    .isLength({
+        max: 150
+    })
+    .withMessage(
+        "Degree cannot exceed 150 characters"
+    ),
+
+
+    body("fieldOfStudy")
     .optional()
     .trim()
     .isLength({
         max: 150
     })
     .withMessage(
-        "Company cannot exceed 150 characters"
-    ),
-
-
-    body("companyUrl")
-    .optional({
-        values: "falsy"
-    })
-    .trim()
-    .isURL()
-    .withMessage(
-        "Company URL must be a valid URL"
+        "Field of study cannot exceed 150 characters"
     ),
 
 
@@ -185,20 +191,6 @@ const updateExperienceSchema = [
     })
     .withMessage(
         "Location cannot exceed 100 characters"
-    ),
-
-
-    body("employmentType")
-    .optional()
-    .isIn([
-        "full-time",
-        "part-time",
-        "internship",
-        "freelance",
-        "contract"
-    ])
-    .withMessage(
-        "Invalid employment type"
     ),
 
 
@@ -220,11 +212,22 @@ const updateExperienceSchema = [
     ),
 
 
-    body("currentlyWorking")
+    body("currentlyStudying")
     .optional()
     .isBoolean()
     .withMessage(
-        "currentlyWorking must be true or false"
+        "currentlyStudying must be true or false"
+    ),
+
+
+    body("grade")
+    .optional()
+    .trim()
+    .isLength({
+        max: 50
+    })
+    .withMessage(
+        "Grade cannot exceed 50 characters"
     ),
 
 
@@ -232,18 +235,10 @@ const updateExperienceSchema = [
     .optional()
     .trim()
     .isLength({
-        max: 3000
+        max: 2000
     })
     .withMessage(
-        "Description cannot exceed 3000 characters"
-    ),
-
-
-    body("technologies")
-    .optional()
-    .isArray()
-    .withMessage(
-        "Technologies must be an array"
+        "Description cannot exceed 2000 characters"
     ),
 
 
@@ -276,6 +271,6 @@ const updateExperienceSchema = [
 
 
 export {
-    createExperienceSchema,
-    updateExperienceSchema
+    createEducationSchema,
+    updateEducationSchema
 };
